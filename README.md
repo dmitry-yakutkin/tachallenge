@@ -8,6 +8,11 @@ go build
 ./server
 ```
 
+Running tests:
+```bash
+cd $GOPATH/src/github.com/dmitry-yakutkin/tachallenge/server
+go test
+```
 ## Rationale
 ### Set implementation
 The main (and maybe the most controversial) thing this solution is based on is a custom sync.Map-based set implementation.
