@@ -10,21 +10,16 @@ import (
 	"github.com/dmitry-yakutkin/tachallenge/server/set"
 )
 
-type (
-	NumbersServiceResponse struct {
-		Numbers []int `json:"numbers"`
-	}
-
-	ExternalNumbersServiceResponse struct {
-		NumbersServiceResponse
-	}
-)
+type NumbersServiceResponse struct {
+	Numbers []int `json:"numbers"`
+}
 
 func processLinks(fetcher fetch.Fetcher, links []string, numbers *[]int) {
 	timer := time.NewTimer(maxRequestProcessingDuration)
 	data := set.NewIntSet()
 	doneFetchingNumbers := make(chan bool)
 
+	// Links processing goroutines.
 	for _, link := range links {
 		go func(link string) {
 			resp, err := fetcher.Get(link)
@@ -35,7 +30,7 @@ func processLinks(fetcher fetch.Fetcher, links []string, numbers *[]int) {
 			}
 			defer resp.Body.Close()
 
-			respJSON := &ExternalNumbersServiceResponse{}
+			respJSON := &NumbersServiceResponse{}
 			err = json.NewDecoder(resp.Body).Decode(respJSON)
 			if err != nil {
 				log.Printf("%s decoding has failed", link)
@@ -51,6 +46,8 @@ func processLinks(fetcher fetch.Fetcher, links []string, numbers *[]int) {
 
 	processedLinks := 0
 
+	// Links processing goroutines management: exit either becasuse of all links where processed or
+	// timeout was exceeded.
 OUT:
 	for {
 		select {
@@ -66,6 +63,7 @@ OUT:
 		}
 	}
 
+	// Return resulting numbers back.
 	elements := data.Elements()
 	*numbers = append(*numbers, elements...)
 }
@@ -75,7 +73,7 @@ func numbersHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("processing %v.", links)
 
 	var numbers []int
-	processLinks(fetch.New(), links, &numbers)
+	processLinks(fetch.NewHTTPFetcher(), links, &numbers)
 
 	enc := json.NewEncoder(w)
 	log.Printf("finished processing, results: %v.", numbers)

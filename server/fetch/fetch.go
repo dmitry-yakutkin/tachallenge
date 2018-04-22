@@ -11,8 +11,17 @@ const (
 	linkKey                            = "u"
 )
 
+// Fetcher is supposed to be used to retreive data from external services.
 type Fetcher interface {
 	Get(link string) (*http.Response, error)
+}
+
+// NewHTTPFetcher creates Fetcher instances.
+func NewHTTPFetcher() Fetcher {
+	return httpFetcher{
+		maxRequestProcessingDuration: maxRequestProcessingDuration,
+		httpClient:                   http.Client{Timeout: maxExternalNumbersFetchingDuration},
+	}
 }
 
 type httpFetcher struct {
@@ -23,11 +32,4 @@ type httpFetcher struct {
 func (f httpFetcher) Get(link string) (*http.Response, error) {
 	resp, err := f.httpClient.Get(link)
 	return resp, err
-}
-
-func New() Fetcher {
-	return httpFetcher{
-		maxRequestProcessingDuration: maxRequestProcessingDuration,
-		httpClient:                   http.Client{Timeout: maxExternalNumbersFetchingDuration},
-	}
 }
